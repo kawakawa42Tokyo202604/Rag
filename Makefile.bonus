@@ -1,6 +1,4 @@
-UV := uv
-UV_CACHE_DIR ?= $(CURDIR)/.uv-cache
-export UV_CACHE_DIR
+UV ?= uv
 PYTHON := $(UV) run python
 
 FILE_PATH ?= data/raw/vllm-0.10.1
