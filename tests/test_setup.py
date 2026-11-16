@@ -3,6 +3,8 @@
 import importlib.util
 import sys
 
+import pytest
+
 
 RUNTIME_MODULES = (
     "fire",
@@ -24,6 +26,7 @@ def test_src_package_is_importable() -> None:
     assert importlib.util.find_spec("src") is not None
 
 
+@pytest.mark.model
 def test_runtime_dependencies_are_available() -> None:
     """Verify that every declared runtime dependency can be discovered."""
     missing_modules = [
@@ -32,3 +35,9 @@ def test_runtime_dependencies_are_available() -> None:
         if importlib.util.find_spec(module_name) is None
     ]
     assert missing_modules == []
+
+
+def test_unit_dependencies_are_available() -> None:
+    """Require the packages used by the model-free pipeline tests."""
+    for module_name in ("fire", "pydantic", "tqdm", "pytest"):
+        assert importlib.util.find_spec(module_name) is not None

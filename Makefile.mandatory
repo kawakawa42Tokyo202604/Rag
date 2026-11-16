@@ -1,6 +1,6 @@
-UV := uv
-UV_CACHE_DIR ?= $(CURDIR)/.uv-cache
-export UV_CACHE_DIR
+UV ?= uv
+TEST_PYTHON ?= 3.10
+TEST_ARGS ?=
 PYTHON := $(UV) run python
 
 FILE_PATH ?= data/raw/vllm-0.10.1
@@ -79,7 +79,14 @@ lint-strict:
 	$(UV) run mypy . --strict
 
 test:
-	$(UV) run pytest tests
+	$(UV) run --no-project --python $(TEST_PYTHON) \
+		--with-requirements requirements-test.txt \
+		python -m pytest tests -m 'not model' $(TEST_ARGS)
+
+test-model:
+	$(UV) run python -m pytest tests -m model $(TEST_ARGS)
+
+.PHONY: test-model
 
 debug:
 	$(PYTHON) -m pdb -m src
