@@ -1,0 +1,56 @@
+RAG.ja.md
+RAG.md
+
+# Python artifacts
+__pycache__/
+*.py[cod]
+.coverage
+htmlcov/
+build/
+dist/
+*.egg-info/
+
+# Tool caches
+.uv-cache/
+.mypy_cache/
+.pytest_cache/
+.ruff_cache/
+.session-logs/
+
+# Virtual environments
+.venv/
+venv/
+
+# Editor and operating-system files
+.DS_Store
+*.swp
+
+# Local corpus and generated data
+data/**
+!data/
+!data/raw/
+!data/raw/vllm-0.10.1/
+!data/raw/vllm-0.10.1/.gitkeep
+!data/datasets/
+!data/datasets/AnsweredQuestions/
+!data/datasets/AnsweredQuestions/.gitkeep
+!data/datasets/UnansweredQuestions/
+!data/datasets/UnansweredQuestions/.gitkeep
+!data/processed/
+!data/processed/.gitkeep
+!data/output/
+!data/output/.gitkeep
+
+# Model weights
+*.safetensors
+*.gguf
+pytorch_model*.bin
+
+# Local environments and generated caches
+.venv/
+__pycache__/
+*.py[cod]
+.pytest_cache/
+.mypy_cache/
+.ruff_cache/
+.env

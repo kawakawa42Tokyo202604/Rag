@@ -1,0 +1,91 @@
+UV := uv
+UV_CACHE_DIR ?= $(CURDIR)/.uv-cache
+export UV_CACHE_DIR
+PYTHON := $(UV) run python
+
+FILE_PATH ?= data/raw/vllm-0.10.1
+MAX_CHUNK_SIZE ?= 2000
+QUERY ?= What HTTP endpoint is used to dynamically load a LoRA adapter in vLLM?
+K ?= 5
+INDEX_PATH ?= data/processed
+DATASET_PATH ?= data/datasets/UnansweredQuestions/dataset_docs_public.json
+SEARCH_DIRECTORY ?= data/output/search_results/UnansweredQuestions
+SEARCH_RESULTS_PATH ?= $(SEARCH_DIRECTORY)/$(notdir $(DATASET_PATH))
+ANSWER_DIRECTORY ?= data/output/search_results_and_answer/UnansweredQuestions
+EVALUATION_RESULTS_PATH ?= data/output/search_results/AnsweredQuestions/dataset_docs_public.json
+EVALUATION_DATASET_PATH ?= data/datasets/AnsweredQuestions/dataset_docs_public.json
+MODEL_NAME ?= Qwen/Qwen3-0.6B
+MAX_NEW_TOKENS ?= 256
+MAX_CONTEXT_CHARACTERS ?= 12000
+
+MYPY_FLAGS := --warn-return-any \
+	--warn-unused-ignores \
+	--ignore-missing-imports \
+	--disallow-untyped-defs \
+	--check-untyped-defs
+
+.PHONY: install run search search-dataset evaluate answer answer-dataset \
+	lint lint-strict test debug clean
+
+install:
+	$(UV) sync
+
+run:
+	$(PYTHON) -m src index \
+		--file_path "$(FILE_PATH)" \
+		--max_chunk_size $(MAX_CHUNK_SIZE)
+
+search:
+	$(PYTHON) -m src search \
+		"$(QUERY)" \
+		--k $(K) \
+		--index_path "$(INDEX_PATH)"
+
+search-dataset:
+	$(PYTHON) -m src search_dataset \
+		--dataset_path "$(DATASET_PATH)" \
+		--k $(K) \
+		--save_directory "$(SEARCH_DIRECTORY)" \
+		--index_path "$(INDEX_PATH)"
+
+evaluate:
+	$(PYTHON) -m src evaluate \
+		--student_search_results_path "$(EVALUATION_RESULTS_PATH)" \
+		--dataset_path "$(EVALUATION_DATASET_PATH)"
+
+answer:
+	$(PYTHON) -m src answer \
+		"$(QUERY)" \
+		--k $(K) \
+		--index_path "$(INDEX_PATH)" \
+		--model_name "$(MODEL_NAME)" \
+		--max_new_tokens $(MAX_NEW_TOKENS) \
+		--max_context_characters $(MAX_CONTEXT_CHARACTERS)
+
+answer-dataset:
+	$(PYTHON) -m src answer_dataset \
+		--student_search_results_path "$(SEARCH_RESULTS_PATH)" \
+		--save_directory "$(ANSWER_DIRECTORY)" \
+		--model_name "$(MODEL_NAME)" \
+		--max_new_tokens $(MAX_NEW_TOKENS) \
+		--max_context_characters $(MAX_CONTEXT_CHARACTERS)
+
+lint:
+	$(UV) run flake8 .
+	$(UV) run mypy . $(MYPY_FLAGS)
+
+lint-strict:
+	$(UV) run flake8 .
+	$(UV) run mypy . --strict
+
+test:
+	$(UV) run pytest tests
+
+debug:
+	$(PYTHON) -m pdb -m src
+
+clean:
+	find src tests -type f -name '*.py[co]' -delete
+	find src tests -type d -name '__pycache__' -prune -exec rm -rf {} +
+	rm -rf .mypy_cache .pytest_cache .ruff_cache htmlcov
+	rm -f .coverage

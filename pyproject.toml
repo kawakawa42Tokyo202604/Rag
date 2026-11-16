@@ -1,0 +1,46 @@
+[project]
+name = "rag-against-the-machine"
+version = "0.1.0"
+description = "A retrieval-augmented generation system for codebase questions."
+readme = "README.md"
+requires-python = ">=3.10"
+dependencies = [
+    "fire>=0.7",
+    "pydantic>=2.0",
+    "scikit-learn>=1.5",
+    "torch>=2.2",
+    "tqdm>=4.66",
+    "transformers>=4.51.0",
+]
+
+[dependency-groups]
+dev = [
+    "flake8>=7.0",
+    "mypy>=1.10",
+    "pytest>=8.0",
+]
+
+[tool.mypy]
+python_version = "3.10"
+warn_return_any = true
+warn_unused_ignores = true
+ignore_missing_imports = true
+disallow_untyped_defs = true
+check_untyped_defs = true
+exclude = [
+    "^data/",
+    "^\\.venv/",
+    "^\\.uv-cache/",
+]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-ra"
+
+[tool.uv.sources]
+torch = { index = "pytorch-cpu" }
+
+[[tool.uv.index]]
+name = "pytorch-cpu"
+url = "https://download.pytorch.org/whl/cpu"
+explicit = true

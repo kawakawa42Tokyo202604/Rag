@@ -1,0 +1,109 @@
+UV := uv
+UV_CACHE_DIR ?= $(CURDIR)/.uv-cache
+export UV_CACHE_DIR
+PYTHON := $(UV) run python
+
+FILE_PATH ?= data/raw/vllm-0.10.1
+MAX_CHUNK_SIZE ?= 2000
+QUERY ?= What HTTP endpoint is used to dynamically load a LoRA adapter in vLLM?
+K ?= 5
+INDEX_PATH ?= data/processed
+DATASET_PATH ?= data/datasets/UnansweredQuestions/dataset_docs_public.json
+SEARCH_DIRECTORY ?= data/output/search_results/UnansweredQuestions
+SEARCH_RESULTS_PATH ?= $(SEARCH_DIRECTORY)/$(notdir $(DATASET_PATH))
+ANSWER_DIRECTORY ?= data/output/search_results_and_answer/UnansweredQuestions
+SEMANTIC_MODEL_NAME ?= sentence-transformers/all-MiniLM-L6-v2
+MODEL_NAME ?= Qwen/Qwen3-0.6B
+MAX_NEW_TOKENS ?= 256
+MAX_CONTEXT_CHARACTERS ?= 12000
+RETRIEVAL_MODE ?= bm25
+SEMANTIC_WEIGHT ?= 0.5
+HOST ?= 127.0.0.1
+PORT ?= 8000
+
+.PHONY: run-semantic run-incremental run-incremental-semantic \
+	search-semantic search-hybrid search-dataset-semantic \
+	search-dataset-hybrid answer-semantic answer-hybrid serve
+
+run-semantic:
+	$(PYTHON) -m src.bonus index \
+		--file_path "$(FILE_PATH)" \
+		--max_chunk_size $(MAX_CHUNK_SIZE) \
+		--semantic_model_name "$(SEMANTIC_MODEL_NAME)"
+
+run-incremental:
+	$(PYTHON) -m src.bonus index \
+		--file_path "$(FILE_PATH)" \
+		--max_chunk_size $(MAX_CHUNK_SIZE) \
+		--incremental
+
+run-incremental-semantic:
+	$(PYTHON) -m src.bonus index \
+		--file_path "$(FILE_PATH)" \
+		--max_chunk_size $(MAX_CHUNK_SIZE) \
+		--semantic_model_name "$(SEMANTIC_MODEL_NAME)" \
+		--incremental
+
+search-semantic:
+	$(PYTHON) -m src.bonus search \
+		"$(QUERY)" \
+		--k $(K) \
+		--index_path "$(INDEX_PATH)" \
+		--retrieval_mode semantic
+
+search-hybrid:
+	$(PYTHON) -m src.bonus search \
+		"$(QUERY)" \
+		--k $(K) \
+		--index_path "$(INDEX_PATH)" \
+		--retrieval_mode hybrid \
+		--semantic_weight $(SEMANTIC_WEIGHT)
+
+search-dataset-semantic:
+	$(PYTHON) -m src.bonus search_dataset \
+		--dataset_path "$(DATASET_PATH)" \
+		--k $(K) \
+		--save_directory "$(SEARCH_DIRECTORY)" \
+		--index_path "$(INDEX_PATH)" \
+		--retrieval_mode semantic
+
+search-dataset-hybrid:
+	$(PYTHON) -m src.bonus search_dataset \
+		--dataset_path "$(DATASET_PATH)" \
+		--k $(K) \
+		--save_directory "$(SEARCH_DIRECTORY)" \
+		--index_path "$(INDEX_PATH)" \
+		--retrieval_mode hybrid \
+		--semantic_weight $(SEMANTIC_WEIGHT)
+
+answer-semantic:
+	$(PYTHON) -m src.bonus answer \
+		"$(QUERY)" \
+		--k $(K) \
+		--index_path "$(INDEX_PATH)" \
+		--model_name "$(MODEL_NAME)" \
+		--max_new_tokens $(MAX_NEW_TOKENS) \
+		--max_context_characters $(MAX_CONTEXT_CHARACTERS) \
+		--retrieval_mode semantic
+
+answer-hybrid:
+	$(PYTHON) -m src.bonus answer \
+		"$(QUERY)" \
+		--k $(K) \
+		--index_path "$(INDEX_PATH)" \
+		--model_name "$(MODEL_NAME)" \
+		--max_new_tokens $(MAX_NEW_TOKENS) \
+		--max_context_characters $(MAX_CONTEXT_CHARACTERS) \
+		--retrieval_mode hybrid \
+		--semantic_weight $(SEMANTIC_WEIGHT)
+
+serve:
+	$(PYTHON) -m src.bonus serve \
+		--host "$(HOST)" \
+		--port $(PORT) \
+		--index_path "$(INDEX_PATH)" \
+		--model_name "$(MODEL_NAME)" \
+		--max_new_tokens $(MAX_NEW_TOKENS) \
+		--max_context_characters $(MAX_CONTEXT_CHARACTERS) \
+		--retrieval_mode "$(RETRIEVAL_MODE)" \
+		--semantic_weight $(SEMANTIC_WEIGHT)
